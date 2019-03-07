@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/eapache/go-resiliency/retrier"
+	"github.com/k81/log"
 )
 
 var (
@@ -102,7 +103,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	)
 
 	if req, err = http.NewRequest(method, url, strings.NewReader(body)); err != nil {
-		logger.Error(client.ctx, "create http request",
+		log.Error(client.ctx, "create http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -115,7 +116,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
-			logger.Error(client.ctx, "set request option",
+			log.Error(client.ctx, "set request option",
 				"http_method", method,
 				"http_url", url,
 				"http_body", body,
@@ -138,7 +139,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	procTime := time.Since(begin)
 
 	if err != nil {
-		logger.Error(ctx, "do http request",
+		log.Error(ctx, "do http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -151,7 +152,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		logger.Error(ctx, "bad http status code",
+		log.Error(ctx, "bad http status code",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -161,7 +162,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
-		logger.Error(ctx, "read response body",
+		log.Error(ctx, "read response body",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -172,7 +173,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	logger.Trace(ctx, "http call ok",
+	log.Trace(ctx, "http call ok",
 		"http_method", method,
 		"http_url", url,
 		"http_body", body,

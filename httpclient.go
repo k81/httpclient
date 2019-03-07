@@ -20,6 +20,9 @@ var (
 
 	// DefaultTimeout is the default client request timeout if not specified
 	DefaultTimeout = 15 * time.Second
+
+	// DefaultLogger is the DefaultLogger used by default
+	DefaultLogger *log.Logger = log.DefaultLogger
 )
 
 // Client is the http client handle
@@ -103,7 +106,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	)
 
 	if req, err = http.NewRequest(method, url, strings.NewReader(body)); err != nil {
-		log.Error(client.ctx, "create http request",
+		DefaultLogger.Error(client.ctx, "create http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -116,7 +119,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
-			log.Error(client.ctx, "set request option",
+			DefaultLogger.Error(client.ctx, "set request option",
 				"http_method", method,
 				"http_url", url,
 				"http_body", body,
@@ -139,7 +142,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	procTime := time.Since(begin)
 
 	if err != nil {
-		log.Error(ctx, "do http request",
+		DefaultLogger.Error(ctx, "do http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -152,7 +155,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		log.Error(ctx, "bad http status code",
+		DefaultLogger.Error(ctx, "bad http status code",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -162,7 +165,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
-		log.Error(ctx, "read response body",
+		DefaultLogger.Error(ctx, "read response body",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -173,7 +176,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	log.Trace(ctx, "http call ok",
+	DefaultLogger.Trace(ctx, "http call ok",
 		"http_method", method,
 		"http_url", url,
 		"http_body", body,

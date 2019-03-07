@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/k81/log"
 )
 
 var (
@@ -20,9 +19,6 @@ var (
 
 	// DefaultTimeout is the default client request timeout if not specified
 	DefaultTimeout = 15 * time.Second
-
-	// DefaultLogger is the DefaultLogger used by default
-	DefaultLogger *log.Logger = log.DefaultLogger
 )
 
 // Client is the http client handle
@@ -106,7 +102,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	)
 
 	if req, err = http.NewRequest(method, url, strings.NewReader(body)); err != nil {
-		DefaultLogger.Error(client.ctx, "create http request",
+		logger.Error(client.ctx, "create http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -115,11 +111,11 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		return "", err
 	}
 
-	ctx := SetDIDIHeader(client.ctx, req)
+	ctx := client.ctx
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
-			DefaultLogger.Error(client.ctx, "set request option",
+			logger.Error(client.ctx, "set request option",
 				"http_method", method,
 				"http_url", url,
 				"http_body", body,
@@ -142,7 +138,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	procTime := time.Since(begin)
 
 	if err != nil {
-		DefaultLogger.Error(ctx, "do http request",
+		logger.Error(ctx, "do http request",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -155,7 +151,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		DefaultLogger.Error(ctx, "bad http status code",
+		logger.Error(ctx, "bad http status code",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -165,7 +161,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
-		DefaultLogger.Error(ctx, "read response body",
+		logger.Error(ctx, "read response body",
 			"http_method", method,
 			"http_url", url,
 			"http_body", body,
@@ -176,7 +172,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	DefaultLogger.Trace(ctx, "http call ok",
+	logger.Trace(ctx, "http call ok",
 		"http_method", method,
 		"http_url", url,
 		"http_body", body,

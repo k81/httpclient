@@ -61,7 +61,7 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 
 	if body != nil {
 		if bodyData, err = json.Marshal(body); err != nil {
-			DefaultLogger.Error(client.ctx, "marshal request body", "error", err)
+			logger.Error(client.ctx, "marshal request body", "error", err)
 			return err
 		}
 	}
@@ -74,7 +74,7 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 
 	if result != nil && resultStr != "" {
 		if err = json.Unmarshal([]byte(resultStr), result); err != nil {
-			DefaultLogger.Error(client.ctx, "unmarshal response body", "error", err)
+			logger.Error(client.ctx, "unmarshal response body", "error", err)
 			return err
 		}
 	}

@@ -40,6 +40,11 @@ func New(ctx context.Context, opts ...ClientOption) *Client {
 	return client
 }
 
+// NewJSON return a JSON client wrapper
+func (client *Client) NewJSON() *JSONClient {
+	return &JSONClient{client}
+}
+
 // Options sends the OPTIONS request
 func (client *Client) Options(url, body string, reqOpts ...RequestOption) (result string, err error) {
 	return client.Do("OPTIONS", url, body, reqOpts...)

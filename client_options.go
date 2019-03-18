@@ -28,3 +28,10 @@ func SetTransport(transport http.RoundTripper) ClientOption {
 		client.Transport = transport
 	}
 }
+
+// SetCookieJar set the cookie jar of client
+func SetCookieJar(cookieJar http.CookieJar) ClientOption {
+	return func(client *Client) {
+		client.Jar = cookieJar
+	}
+}

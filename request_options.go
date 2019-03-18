@@ -16,6 +16,11 @@ func SetHeader(key, value string) RequestOption {
 	}
 }
 
+// SetTypeXML sets the Content-Type to `application/xml`
+func SetTypeXML() RequestOption {
+	return SetHeader("Content-Type", "application/xml; charset=UTF-8")
+}
+
 // SetTypeJSON sets the Content-Type to `application/json`
 func SetTypeJSON() RequestOption {
 	return SetHeader("Content-Type", "application/json; charset=UTF-8")

@@ -24,8 +24,9 @@ var (
 // Client is the http client handle
 type Client struct {
 	*http.Client
-	Retry *Retry
-	ctx   context.Context
+	Retry          *Retry
+	DefaultReqOpts []RequestOption
+	ctx            context.Context
 }
 
 // New creates a new http client with specified client options
@@ -48,6 +49,11 @@ func (client *Client) NewJSON() *JSONClient {
 // NewXML return a XML client wrapper
 func (client *Client) NewXML() *XMLClient {
 	return &XMLClient{client}
+}
+
+// SetDefaultReqOpts set the default request options, applied before each request.
+func (client *Client) SetDefaultReqOpts(reqOpts ...RequestOption) {
+	client.DefaultReqOpts = reqOpts[:len(reqOpts):len(reqOpts)]
 }
 
 // Options sends the OPTIONS request
@@ -122,6 +128,8 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	ctx := client.ctx
+
+	reqOpts = append(client.DefaultReqOpts, reqOpts...)
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {

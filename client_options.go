@@ -25,7 +25,7 @@ func Timeout(timeout time.Duration) ClientOption {
 // SetTransport set the transport of client
 func SetTransport(transport http.RoundTripper) ClientOption {
 	return func(client *Client) {
-		client.Transport = transport
+		client.Transport = NewLogTransport(client.ctx, transport)
 	}
 }
 

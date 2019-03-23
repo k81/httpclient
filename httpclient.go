@@ -14,11 +14,6 @@ import (
 )
 
 var (
-	// DefaultTransport is the default transport to be used when not specified
-	DefaultTransport = &http.Transport{
-		MaxIdleConnsPerHost: 16,
-	}
-
 	// DefaultTimeout is the default client request timeout if not specified
 	DefaultTimeout  = 15 * time.Second
 	DebugSetCookies = false
@@ -122,9 +117,9 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if req, err = http.NewRequest(method, url, strings.NewReader(body)); err != nil {
 		logger.Error(client.ctx, "create http request",
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"error", err,
 		)
 		return "", err
@@ -137,9 +132,9 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
 			logger.Error(client.ctx, "set request option",
-				"http_method", method,
-				"http_url", url,
-				"http_body", body,
+				"method", method,
+				"url", url,
+				"body", body,
 				"error", err,
 			)
 			return "", err
@@ -147,7 +142,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	if client.Transport == nil {
-		client.Transport = DefaultTransport
+		client.Transport = NewLogTransport(client.ctx, http.DefaultTransport)
 	}
 
 	if client.Timeout == 0 {
@@ -160,9 +155,9 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if err != nil {
 		logger.Error(ctx, "do http request",
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"error", err,
 		)
 		return "", err
@@ -173,9 +168,9 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
 		logger.Error(ctx, "bad http status code",
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"error", err,
 		)
 		return "", err
@@ -183,9 +178,9 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
 		logger.Error(ctx, "read response body",
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"error", err,
 		)
 		return "", err
@@ -204,23 +199,23 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 			buf.Truncate(buf.Len() - 1)
 		}
 		kvs = []interface{}{
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"result", result,
 			"set_cookies", buf.String(),
 			"proc_time", procTime,
 		}
 	} else {
 		kvs = []interface{}{
-			"http_method", method,
-			"http_url", url,
-			"http_body", body,
+			"method", method,
+			"url", url,
+			"body", body,
 			"result", result,
 			"proc_time", procTime,
 		}
 	}
-	logger.Debug(ctx, "http call ok", kvs...)
+	logger.Debug(ctx, "request success", kvs...)
 
 	return result, nil
 }

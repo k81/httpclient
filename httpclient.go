@@ -1,6 +1,8 @@
 package httpclient
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -18,7 +20,8 @@ var (
 	}
 
 	// DefaultTimeout is the default client request timeout if not specified
-	DefaultTimeout = 15 * time.Second
+	DefaultTimeout  = 15 * time.Second
+	DebugSetCookies = false
 )
 
 // Client is the http client handle
@@ -190,13 +193,26 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	logger.Trace(ctx, "http call ok",
+	kvs := []interface{}{
 		"http_method", method,
 		"http_url", url,
 		"http_body", body,
 		"result", result,
 		"proc_time", procTime,
-	)
+	}
+
+	if DebugSetCookies {
+		buf := &bytes.Buffer{}
+		for _, cookie := range resp.Cookies() {
+			buf.WriteString(fmt.Sprintf("%v=%v|", cookie.Name, cookie.Value))
+		}
+
+		if buf.Len() > 0 {
+			buf.Truncate(buf.Len() - 1)
+		}
+		kvs = append(kvs, "set_cookies", buf.String())
+	}
+	logger.Trace(ctx, "http call ok", kvs...)
 
 	return result, nil
 }

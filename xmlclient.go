@@ -66,7 +66,7 @@ func (client *XMLClient) Do(method, url string, body, result interface{}, reqOpt
 		}
 	}
 
-	reqOpts = append(reqOpts, SetTypeXML())
+	reqOpts = append([]RequestOption{SetTypeXML()}, reqOpts...)
 
 	if resultStr, err = client.Client.Do(method, url, string(bodyData), reqOpts...); err != nil {
 		return err

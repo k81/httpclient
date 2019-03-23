@@ -66,7 +66,7 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 		}
 	}
 
-	reqOpts = append(reqOpts, SetTypeJSON())
+	reqOpts = append([]RequestOption{SetTypeJSON()}, reqOpts...)
 
 	if resultStr, err = client.Client.Do(method, url, string(bodyData), reqOpts...); err != nil {
 		return err

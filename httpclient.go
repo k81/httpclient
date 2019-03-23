@@ -193,14 +193,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	kvs := []interface{}{
-		"http_method", method,
-		"http_url", url,
-		"http_body", body,
-		"result", result,
-		"proc_time", procTime,
-	}
-
+	var kvs []interface{}
 	if DebugSetCookies {
 		buf := &bytes.Buffer{}
 		for _, cookie := range resp.Cookies() {
@@ -210,9 +203,24 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		if buf.Len() > 0 {
 			buf.Truncate(buf.Len() - 1)
 		}
-		kvs = append(kvs, "set_cookies", buf.String())
+		kvs = []interface{}{
+			"http_method", method,
+			"http_url", url,
+			"http_body", body,
+			"result", result,
+			"set_cookies", buf.String(),
+			"proc_time", procTime,
+		}
+	} else {
+		kvs = []interface{}{
+			"http_method", method,
+			"http_url", url,
+			"http_body", body,
+			"result", result,
+			"proc_time", procTime,
+		}
 	}
-	logger.Trace(ctx, "http call ok", kvs...)
+	logger.Debug(ctx, "http call ok", kvs...)
 
 	return result, nil
 }

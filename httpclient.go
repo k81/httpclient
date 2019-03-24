@@ -21,7 +21,7 @@ var (
 // Client is the http client handle
 type Client struct {
 	*http.Client
-	Retry   *Retry
+	retry   *Retry
 	reqOpts []RequestOption
 	ctx     context.Context
 }
@@ -51,6 +51,11 @@ func (client *Client) NewXML() *XMLClient {
 // SetDefaultReqOpts set the default request options, applied before each request.
 func (client *Client) SetDefaultReqOpts(reqOpts ...RequestOption) {
 	client.reqOpts = reqOpts[:len(reqOpts):len(reqOpts)]
+}
+
+// SetRetry set the retry backoffs, default no retry
+func (client *Client) SetRetry(backOffs []time.Duration) {
+	client.retry = &Retry{BackOffs: backOffs}
 }
 
 // Options sends the OPTIONS request
@@ -90,11 +95,11 @@ func (client *Client) Delete(url, body string, reqOpts ...RequestOption) (result
 
 // Do sends a custom METHOD request
 func (client *Client) Do(method, url, body string, reqOpts ...RequestOption) (result string, err error) {
-	if client.Retry == nil {
+	if client.retry == nil {
 		return client.do(method, url, body, reqOpts...)
 	}
 
-	retry := retrier.New(client.Retry.BackOffs, client.Retry)
+	retry := retrier.New(client.retry.BackOffs, client.retry)
 
 	err = retry.Run(func() error {
 		if result, err = client.do(method, url, body, reqOpts...); err != nil {

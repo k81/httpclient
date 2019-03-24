@@ -15,8 +15,7 @@ import (
 
 var (
 	// DefaultTimeout is the default client request timeout if not specified
-	DefaultTimeout  = 15 * time.Second
-	DebugSetCookies = false
+	DefaultTimeout = 15 * time.Second
 )
 
 // Client is the http client handle
@@ -141,10 +140,6 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		}
 	}
 
-	if client.Transport == nil {
-		client.Transport = NewLogTransport(client.ctx, http.DefaultTransport)
-	}
-
 	if client.Timeout == 0 {
 		client.Timeout = DefaultTimeout
 	}
@@ -156,7 +151,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	if err != nil {
 		logger.Error(ctx, "do http request",
 			"method", method,
-			"url", url,
+			"url", req.URL.String(),
 			"body", body,
 			"error", err,
 		)
@@ -169,7 +164,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		err = &HTTPError{resp.StatusCode, resp.Status}
 		logger.Error(ctx, "bad http status code",
 			"method", method,
-			"url", url,
+			"url", req.URL.String(),
 			"body", body,
 			"error", err,
 		)
@@ -179,7 +174,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
 		logger.Error(ctx, "read response body",
 			"method", method,
-			"url", url,
+			"url", req.URL.String(),
 			"body", body,
 			"error", err,
 		)
@@ -188,32 +183,21 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	result = string(respData)
 
-	var kvs []interface{}
-	if DebugSetCookies {
-		buf := &bytes.Buffer{}
-		for _, cookie := range resp.Cookies() {
-			buf.WriteString(fmt.Sprintf("%v=%v|", cookie.Name, cookie.Value))
-		}
+	buf := &bytes.Buffer{}
+	for _, cookie := range resp.Cookies() {
+		buf.WriteString(fmt.Sprintf("%v=%v|", cookie.Name, cookie.Value))
+	}
 
-		if buf.Len() > 0 {
-			buf.Truncate(buf.Len() - 1)
-		}
-		kvs = []interface{}{
-			"method", method,
-			"url", url,
-			"body", body,
-			"result", result,
-			"set_cookies", buf.String(),
-			"proc_time", procTime,
-		}
-	} else {
-		kvs = []interface{}{
-			"method", method,
-			"url", url,
-			"body", body,
-			"result", result,
-			"proc_time", procTime,
-		}
+	if buf.Len() > 0 {
+		buf.Truncate(buf.Len() - 1)
+	}
+	kvs := []interface{}{
+		"method", method,
+		"url", req.URL.String(),
+		"body", body,
+		"result", result,
+		"set_cookies", buf.String(),
+		"proc_time", procTime,
 	}
 	logger.Debug(ctx, "request success", kvs...)
 

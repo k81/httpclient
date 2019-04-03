@@ -3,8 +3,10 @@ package httpclient
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -109,6 +111,103 @@ func (client *Client) Do(method, url, body string, reqOpts ...RequestOption) (re
 	})
 
 	return result, err
+}
+
+// DownloadFile download file from url
+func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption) (err error) {
+	var (
+		req    *http.Request
+		resp   *http.Response
+		method = "GET"
+	)
+
+	if req, err = http.NewRequest(method, url, nil); err != nil {
+		logger.Error(client.ctx, "create http download request",
+			"method", method,
+			"url", url,
+			"out_file", outFile,
+			"error", err,
+		)
+		return err
+	}
+
+	ctx := client.ctx
+
+	reqOpts = append(client.reqOpts, reqOpts...)
+
+	for _, reqOpt := range reqOpts {
+		if err = reqOpt(req); err != nil {
+			logger.Error(client.ctx, "set request option",
+				"method", method,
+				"url", url,
+				"out_file", outFile,
+				"error", err,
+			)
+			return err
+		}
+	}
+
+	if client.Timeout == 0 {
+		client.Timeout = DefaultTimeout
+	}
+
+	begin := time.Now()
+	resp, err = client.Client.Do(req)
+	procTime := time.Since(begin)
+
+	if err != nil {
+		logger.Error(ctx, "do http request",
+			"method", method,
+			"url", req.URL.String(),
+			"out_file", outFile,
+			"error", err,
+		)
+		return err
+	}
+	// nolint: errcheck
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err = &HTTPError{resp.StatusCode, resp.Status}
+		logger.Error(ctx, "bad http status code",
+			"method", method,
+			"url", req.URL.String(),
+			"out_file", outFile,
+			"error", err,
+		)
+		return err
+	}
+
+	// open file
+	out, err := os.Create(outFile)
+	if err != nil {
+		logger.Error(ctx, "create download file", "out_file", outFile, "error", err)
+		return err
+	}
+	defer out.Close()
+
+	written, err := io.Copy(out, resp.Body)
+	if err != nil {
+		logger.Error(ctx, "copy response data to download file",
+			"method", method,
+			"url", req.URL.String(),
+			"out_file", outFile,
+			"error", err,
+		)
+		return err
+	}
+
+	kvs := []interface{}{
+		"method", method,
+		"url", req.URL.String(),
+		"out_file", outFile,
+		"file_size", written,
+		"proc_time", procTime,
+	}
+	logger.Debug(ctx, "request success", kvs...)
+
+	return nil
+
 }
 
 // do the internal request sending implementation

@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -275,7 +276,18 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		return "", err
 	}
 
-	if respData, err = ioutil.ReadAll(resp.Body); err != nil {
+	var reader io.ReadCloser
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		if reader, err = gzip.NewReader(resp.Body); err != nil {
+			return "", err
+		}
+		defer reader.Close()
+	default:
+		reader = ioutil.NopCloser(resp.Body)
+	}
+
+	if respData, err = ioutil.ReadAll(reader); err != nil {
 		logger.Error(ctx, "read response body",
 			"method", method,
 			"url", req.URL.String(),

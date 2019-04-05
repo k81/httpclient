@@ -277,6 +277,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	var reader io.ReadCloser
+	// for the case server send gzipped data even if client not sending "Accept-Encoding: gzip"
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
 		if reader, err = gzip.NewReader(resp.Body); err != nil {

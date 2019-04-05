@@ -60,9 +60,18 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 	)
 
 	if body != nil {
-		if bodyData, err = json.Marshal(body); err != nil {
-			logger.Error(client.ctx, "marshal request body", "error", err)
-			return err
+		switch bodyValue := body.(type) {
+		case string:
+			bodyData = []byte(bodyValue)
+		case json.RawMessage:
+			bodyData = []byte(bodyValue)
+		case []byte:
+			bodyData = bodyValue
+		default:
+			if bodyData, err = json.Marshal(body); err != nil {
+				logger.Error(client.ctx, "marshal request body", "error", err)
+				return err
+			}
 		}
 	}
 

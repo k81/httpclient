@@ -60,9 +60,16 @@ func (client *XMLClient) Do(method, url string, body, result interface{}, reqOpt
 	)
 
 	if body != nil {
-		if bodyData, err = xml.Marshal(body); err != nil {
-			logger.Error(client.ctx, "marshal request body", "error", err)
-			return err
+		switch bodyValue := body.(type) {
+		case string:
+			bodyData = []byte(bodyValue)
+		case []byte:
+			bodyData = bodyValue
+		default:
+			if bodyData, err = xml.Marshal(body); err != nil {
+				logger.Error(client.ctx, "marshal request body", "error", err)
+				return err
+			}
 		}
 	}
 

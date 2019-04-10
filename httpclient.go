@@ -24,7 +24,7 @@ var (
 // Client is the http client handle
 type Client struct {
 	*http.Client
-	retry   *Retry
+	retrier *retrier.Retrier
 	reqOpts []RequestOption
 	ctx     context.Context
 }
@@ -56,9 +56,9 @@ func (client *Client) SetDefaultReqOpts(reqOpts ...RequestOption) {
 	client.reqOpts = reqOpts[:len(reqOpts):len(reqOpts)]
 }
 
-// SetRetry set the retry backoffs, default no retry
-func (client *Client) SetRetry(backOffs []time.Duration) {
-	client.retry = &Retry{BackOffs: backOffs}
+// SetRetry set the retrier
+func (client *Client) SetRetrier(r *retrier.Retrier) {
+	client.retrier = r
 }
 
 // Options sends the OPTIONS request
@@ -98,13 +98,11 @@ func (client *Client) Delete(url, body string, reqOpts ...RequestOption) (result
 
 // Do sends a custom METHOD request
 func (client *Client) Do(method, url, body string, reqOpts ...RequestOption) (result string, err error) {
-	if client.retry == nil {
+	if client.retrier == nil {
 		return client.do(method, url, body, reqOpts...)
 	}
 
-	retry := retrier.New(client.retry.BackOffs, client.retry)
-
-	err = retry.Run(func() error {
+	err = client.retrier.Run(func() error {
 		if result, err = client.do(method, url, body, reqOpts...); err != nil {
 			return err
 		}

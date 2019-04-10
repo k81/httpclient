@@ -2,18 +2,18 @@ package httpclient
 
 import (
 	"net"
-	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
 )
 
-// Retry defines the retry strategy
-type Retry struct {
-	BackOffs []time.Duration
-}
+// DefaultRetryClassifer is the default retry error classifer
+var DefaultRetryClassifer = &retryClassifer{}
+
+// retryClassifer defines the a retry strategy for network error
+type retryClassifer struct{}
 
 // Classify implements the retrier.Classifier interface
-func (r *Retry) Classify(err error) retrier.Action {
+func (r *retryClassifer) Classify(err error) retrier.Action {
 	if err == nil {
 		return retrier.Succeed
 	}

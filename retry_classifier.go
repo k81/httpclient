@@ -2,24 +2,38 @@ package httpclient
 
 import (
 	"net"
+	"strings"
 
 	"github.com/eapache/go-resiliency/retrier"
 )
 
-// DefaultRetryClassifer is the default retry error classifer
-var DefaultRetryClassifer = &retryClassifer{}
+var HTTP2RetriableError = []string{
+	"CONNECT_ERROR",
+	"PROTOCOL_ERROR",
+	"STREAM_CLOSED",
+}
 
-// retryClassifer defines the a retry strategy for network error
-type retryClassifer struct{}
+// DefaultRetryClassifier is the default retry classifier
+var DefaultRetryClassifier = &RetryClassifier{}
+
+// RetryClassifier defines the retry error classifier
+type RetryClassifier struct{}
 
 // Classify implements the retrier.Classifier interface
-func (r *retryClassifer) Classify(err error) retrier.Action {
+func (r *RetryClassifier) Classify(err error) retrier.Action {
 	if err == nil {
 		return retrier.Succeed
 	}
 
 	if ne, ok := err.(net.Error); ok && ne.Temporary() {
 		return retrier.Retry
+	}
+
+	errContent := err.Error()
+	for _, http2RetriableError := range HTTP2RetriableError {
+		if strings.Contains(errContent, http2RetriableError) {
+			return retrier.Retry
+		}
 	}
 
 	return retrier.Fail

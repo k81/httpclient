@@ -56,7 +56,12 @@ func (client *Client) SetDefaultReqOpts(reqOpts ...RequestOption) {
 	client.reqOpts = reqOpts[:len(reqOpts):len(reqOpts)]
 }
 
-// SetRetry set the retrier
+// SetRetry set the retry backoff
+func (client *Client) SetRetry(backoff []time.Duration) {
+	client.retrier = retrier.New(backoff, DefaultRetryClassifier)
+}
+
+// SetRetrier set the retrier
 func (client *Client) SetRetrier(r *retrier.Retrier) {
 	client.retrier = r
 }

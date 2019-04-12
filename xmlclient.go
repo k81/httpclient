@@ -3,6 +3,8 @@ package httpclient
 import (
 	"context"
 	"encoding/xml"
+
+	"github.com/k81/log"
 )
 
 // XMLClient is an wrapper of *Client, which talks in XML
@@ -67,7 +69,7 @@ func (client *XMLClient) Do(method, url string, body, result interface{}, reqOpt
 			bodyData = bodyValue
 		default:
 			if bodyData, err = xml.Marshal(body); err != nil {
-				logger.Error(client.ctx, "marshal request body", "error", err)
+				log.Error(client.ctx, "marshal request body", "error", err)
 				return err
 			}
 		}
@@ -81,7 +83,7 @@ func (client *XMLClient) Do(method, url string, body, result interface{}, reqOpt
 
 	if result != nil && resultStr != "" {
 		if err = xml.Unmarshal([]byte(resultStr), result); err != nil {
-			logger.Error(client.ctx, "unmarshal response body", "error", err)
+			log.Error(client.ctx, "unmarshal response body", "error", err)
 			return err
 		}
 	}

@@ -14,6 +14,7 @@ import (
 	"context"
 
 	"github.com/eapache/go-resiliency/retrier"
+	"github.com/k81/log"
 )
 
 var (
@@ -126,27 +127,13 @@ func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption
 	)
 
 	if req, err = http.NewRequest(method, url, nil); err != nil {
-		logger.Error(client.ctx, "create http download request",
-			"method", method,
-			"url", url,
-			"out_file", outFile,
-			"error", err,
-		)
 		return err
 	}
-
-	ctx := client.ctx
 
 	reqOpts = append(client.reqOpts, reqOpts...)
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
-			logger.Error(client.ctx, "set request option",
-				"method", method,
-				"url", url,
-				"out_file", outFile,
-				"error", err,
-			)
 			return err
 		}
 	}
@@ -155,17 +142,16 @@ func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption
 		client.Timeout = DefaultTimeout
 	}
 
+	ctx := log.WithContext(client.ctx,
+		"method", method,
+		"url", req.URL.String(),
+		"out_file", outFile,
+	)
+
 	begin := time.Now()
 	resp, err = client.Client.Do(req)
-	procTime := time.Since(begin)
-
 	if err != nil {
-		logger.Error(ctx, "do http request",
-			"method", method,
-			"url", req.URL.String(),
-			"out_file", outFile,
-			"error", err,
-		)
+		log.Error(ctx, "do http request", "error", err, "proc_time", time.Since(begin))
 		return err
 	}
 	// nolint: errcheck
@@ -173,42 +159,25 @@ func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		logger.Error(ctx, "bad http status code",
-			"method", method,
-			"url", req.URL.String(),
-			"out_file", outFile,
-			"error", err,
-		)
+		log.Error(ctx, "bad http status code", "error", err, "proc_time", time.Since(begin))
 		return err
 	}
 
 	// open file
 	out, err := os.Create(outFile)
 	if err != nil {
-		logger.Error(ctx, "create download file", "out_file", outFile, "error", err)
+		log.Error(ctx, "create download file", "error", err, "proc_time", time.Since(begin))
 		return err
 	}
 	defer out.Close()
 
 	written, err := io.Copy(out, resp.Body)
 	if err != nil {
-		logger.Error(ctx, "copy response data to download file",
-			"method", method,
-			"url", req.URL.String(),
-			"out_file", outFile,
-			"error", err,
-		)
+		log.Error(ctx, "copy response data to download file", "error", err, "proc_time", time.Since(begin))
 		return err
 	}
 
-	kvs := []interface{}{
-		"method", method,
-		"url", req.URL.String(),
-		"out_file", outFile,
-		"file_size", written,
-		"proc_time", procTime,
-	}
-	logger.Debug(ctx, "request success", kvs...)
+	log.Debug(ctx, "request success", "file_size", written, "proc_time", time.Since(begin))
 
 	return nil
 
@@ -223,27 +192,13 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	)
 
 	if req, err = http.NewRequest(method, url, strings.NewReader(body)); err != nil {
-		logger.Error(client.ctx, "create http request",
-			"method", method,
-			"url", url,
-			"body", body,
-			"error", err,
-		)
 		return "", err
 	}
-
-	ctx := client.ctx
 
 	reqOpts = append(client.reqOpts, reqOpts...)
 
 	for _, reqOpt := range reqOpts {
 		if err = reqOpt(req); err != nil {
-			logger.Error(client.ctx, "set request option",
-				"method", method,
-				"url", url,
-				"body", body,
-				"error", err,
-			)
 			return "", err
 		}
 	}
@@ -252,17 +207,16 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		client.Timeout = DefaultTimeout
 	}
 
+	ctx := log.WithContext(client.ctx,
+		"method", method,
+		"url", req.URL.String(),
+		"body", body,
+	)
+
 	begin := time.Now()
 	resp, err = client.Client.Do(req)
-	procTime := time.Since(begin)
-
 	if err != nil {
-		logger.Error(ctx, "do http request",
-			"method", method,
-			"url", req.URL.String(),
-			"body", body,
-			"error", err,
-		)
+		log.Error(ctx, "do http request", "error", err, "proc_time", time.Since(begin))
 		return "", err
 	}
 	// nolint: errcheck
@@ -270,12 +224,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		logger.Error(ctx, "bad http status code",
-			"method", method,
-			"url", req.URL.String(),
-			"body", body,
-			"error", err,
-		)
+		log.Error(ctx, "bad http status code", "error", err, "proc_time", time.Since(begin))
 		return "", err
 	}
 
@@ -284,6 +233,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
 		if reader, err = gzip.NewReader(resp.Body); err != nil {
+			log.Error(ctx, "create gzip reader", "error", err, "proc_time", time.Since(begin))
 			return "", err
 		}
 		defer reader.Close()
@@ -292,12 +242,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	}
 
 	if respData, err = ioutil.ReadAll(reader); err != nil {
-		logger.Error(ctx, "read response body",
-			"method", method,
-			"url", req.URL.String(),
-			"body", body,
-			"error", err,
-		)
+		log.Error(ctx, "read response body", "error", err, "proc_time", time.Since(begin))
 		return "", err
 	}
 
@@ -311,15 +256,12 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 	if buf.Len() > 0 {
 		buf.Truncate(buf.Len() - 1)
 	}
-	kvs := []interface{}{
-		"method", method,
-		"url", req.URL.String(),
-		"body", body,
+
+	log.Debug(ctx, "request success",
 		"result", result,
 		"set_cookies", buf.String(),
-		"proc_time", procTime,
-	}
-	logger.Debug(ctx, "request success", kvs...)
+		"proc_time", time.Since(begin),
+	)
 
 	return result, nil
 }

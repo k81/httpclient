@@ -3,6 +3,8 @@ package httpclient
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/k81/log"
 )
 
 // JSONClient is an wrapper of *Client, which talks in JSON
@@ -69,7 +71,7 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 			bodyData = bodyValue
 		default:
 			if bodyData, err = json.Marshal(body); err != nil {
-				logger.Error(client.ctx, "marshal request body", "error", err)
+				log.Error(client.ctx, "marshal request body", "error", err)
 				return err
 			}
 		}
@@ -83,7 +85,7 @@ func (client *JSONClient) Do(method, url string, body, result interface{}, reqOp
 
 	if result != nil && resultStr != "" {
 		if err = json.Unmarshal([]byte(resultStr), result); err != nil {
-			logger.Error(client.ctx, "unmarshal response body", "error", err)
+			log.Error(client.ctx, "unmarshal response body", "error", err)
 			return err
 		}
 	}

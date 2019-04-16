@@ -25,12 +25,13 @@ func TestGet(t *testing.T) {
 		}
 	}))
 
-	client := New(context.TODO(), Timeout(time.Second*5), DisableRedirect)
+	ctx := context.TODO()
+	client := New(Timeout(time.Second*5), DisableRedirect)
 
 	query := url.Values{}
 	query.Add("hello", "world")
 
-	result, err := client.Get(server.URL, "", SetQuery(query))
+	result, err := client.Get(ctx, server.URL, "", SetQuery(query))
 	require.NoError(t, err)
 	require.Equal(t, "hello world", result)
 }
@@ -44,12 +45,13 @@ func TestPost(t *testing.T) {
 			fmt.Fprintf(w, "bad hello")
 		}
 	}))
-	client := New(context.TODO(), Timeout(time.Second*5), DisableRedirect)
+	ctx := context.TODO()
+	client := New(Timeout(time.Second*5), DisableRedirect)
 
 	form := url.Values{}
 	form.Add("a", "1")
 	form.Add("b", "2")
-	result, err := client.Post(server.URL, form.Encode(), SetTypeForm())
+	result, err := client.Post(ctx, server.URL, form.Encode(), SetTypeForm())
 	require.NoError(t, err)
 	require.Equal(t, "hello world", result)
 }
@@ -86,7 +88,8 @@ func TestJSONPost(t *testing.T) {
 
 	}))
 
-	client := NewJSON(context.TODO(), Timeout(time.Second*5), DisableRedirect)
+	ctx := context.TODO()
+	client := NewJSON(Timeout(time.Second*5), DisableRedirect)
 
 	hello := &Hello{
 		Hello: "world",
@@ -94,7 +97,7 @@ func TestJSONPost(t *testing.T) {
 
 	result := &HelloResult{}
 
-	err := client.Post(server.URL, hello, result, SetTypeJSON())
+	err := client.Post(ctx, server.URL, hello, result, SetTypeJSON())
 	require.NoError(t, err)
 	require.Equal(t, 0, result.ErrNo)
 	require.Equal(t, "hello world", result.ErrMsg)

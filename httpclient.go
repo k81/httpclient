@@ -27,14 +27,12 @@ type Client struct {
 	*http.Client
 	retrier *retrier.Retrier
 	reqOpts []RequestOption
-	ctx     context.Context
 }
 
 // New creates a new http client with specified client options
-func New(ctx context.Context, opts ...ClientOption) *Client {
+func New(opts ...ClientOption) *Client {
 	client := &Client{
 		Client: &http.Client{},
-		ctx:    ctx,
 	}
 	for _, opt := range opts {
 		opt(client)
@@ -68,48 +66,48 @@ func (client *Client) SetRetrier(r *retrier.Retrier) {
 }
 
 // Options sends the OPTIONS request
-func (client *Client) Options(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("OPTIONS", url, body, reqOpts...)
+func (client *Client) Options(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "OPTIONS", url, body, reqOpts...)
 }
 
 // Head sends the HEAD request
-func (client *Client) Head(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("HEAD", url, body, reqOpts...)
+func (client *Client) Head(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "HEAD", url, body, reqOpts...)
 }
 
 // Get sends the GET request
-func (client *Client) Get(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("GET", url, body, reqOpts...)
+func (client *Client) Get(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "GET", url, body, reqOpts...)
 }
 
 // Post sends the POST request
-func (client *Client) Post(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("POST", url, body, reqOpts...)
+func (client *Client) Post(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "POST", url, body, reqOpts...)
 }
 
 // Patch sends the PATCH request
-func (client *Client) Patch(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("PATCH", url, body, reqOpts...)
+func (client *Client) Patch(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "PATCH", url, body, reqOpts...)
 }
 
 // Put sends the PUT request
-func (client *Client) Put(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("PUT", url, body, reqOpts...)
+func (client *Client) Put(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "PUT", url, body, reqOpts...)
 }
 
 // Delete sends the DELETE request
-func (client *Client) Delete(url, body string, reqOpts ...RequestOption) (result string, err error) {
-	return client.Do("DELETE", url, body, reqOpts...)
+func (client *Client) Delete(ctx context.Context, url, body string, reqOpts ...RequestOption) (result string, err error) {
+	return client.Do(ctx, "DELETE", url, body, reqOpts...)
 }
 
 // Do sends a custom METHOD request
-func (client *Client) Do(method, url, body string, reqOpts ...RequestOption) (result string, err error) {
+func (client *Client) Do(ctx context.Context, method, url, body string, reqOpts ...RequestOption) (result string, err error) {
 	if client.retrier == nil {
-		return client.do(method, url, body, reqOpts...)
+		return client.do(ctx, method, url, body, reqOpts...)
 	}
 
 	err = client.retrier.Run(func() error {
-		if result, err = client.do(method, url, body, reqOpts...); err != nil {
+		if result, err = client.do(ctx, method, url, body, reqOpts...); err != nil {
 			return err
 		}
 		return nil
@@ -119,7 +117,7 @@ func (client *Client) Do(method, url, body string, reqOpts ...RequestOption) (re
 }
 
 // DownloadFile download file from url
-func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption) (err error) {
+func (client *Client) DownloadFile(ctx context.Context, url, outFile string, reqOpts ...RequestOption) (err error) {
 	var (
 		req    *http.Request
 		resp   *http.Response
@@ -142,7 +140,7 @@ func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption
 		client.Timeout = DefaultTimeout
 	}
 
-	ctx := log.WithContext(client.ctx,
+	ctx = log.WithContext(ctx,
 		"method", method,
 		"url", req.URL.String(),
 		"out_file", outFile,
@@ -184,7 +182,7 @@ func (client *Client) DownloadFile(url, outFile string, reqOpts ...RequestOption
 }
 
 // do the internal request sending implementation
-func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (result string, err error) {
+func (client *Client) do(ctx context.Context, method, url, body string, reqOpts ...RequestOption) (result string, err error) {
 	var (
 		req      *http.Request
 		resp     *http.Response
@@ -207,7 +205,7 @@ func (client *Client) do(method, url, body string, reqOpts ...RequestOption) (re
 		client.Timeout = DefaultTimeout
 	}
 
-	ctx := log.WithContext(client.ctx,
+	ctx = log.WithContext(ctx,
 		"method", method,
 		"url", req.URL.String(),
 		"body", body,

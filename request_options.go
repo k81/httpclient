@@ -1,18 +1,19 @@
 package httpclient
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 )
 
 // RequestOption defines the request option to customize the request
-type RequestOption func(*http.Request) error
+type RequestOption func(ctx context.Context, req *http.Request) (newctx context.Context, err error)
 
 // SetHeader sets the request header
 func SetHeader(key, value string) RequestOption {
-	return func(req *http.Request) error {
+	return func(ctx context.Context, req *http.Request) (context.Context, error) {
 		req.Header.Set(key, value)
-		return nil
+		return ctx, nil
 	}
 }
 
@@ -33,7 +34,7 @@ func SetTypeForm() RequestOption {
 
 // SetQuery sets the query params
 func SetQuery(values url.Values) RequestOption {
-	return func(req *http.Request) error {
+	return func(ctx context.Context, req *http.Request) (context.Context, error) {
 		q := req.URL.Query()
 		for k, v := range values {
 			for _, vv := range v {
@@ -41,6 +42,6 @@ func SetQuery(values url.Values) RequestOption {
 			}
 		}
 		req.URL.RawQuery = q.Encode()
-		return nil
+		return ctx, nil
 	}
 }

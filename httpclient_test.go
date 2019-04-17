@@ -116,8 +116,8 @@ func TestLogContextFunc(t *testing.T) {
 
 	ctx := context.TODO()
 	client := New(Timeout(time.Second*5), DisableRedirect)
-	client.SetLogContextFunc(func(ctx context.Context, req *http.Request) context.Context {
-		return log.WithContext(ctx, "log_method", req.Method)
+	client.SetDefaultReqOpts(func(ctx context.Context, req *http.Request) (context.Context, error) {
+		return log.WithContext(ctx, "log_method", req.Method), nil
 	})
 
 	query := url.Values{}

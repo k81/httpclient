@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/k81/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -101,6 +102,30 @@ func TestJSONPost(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, result.ErrNo)
 	require.Equal(t, "hello world", result.ErrMsg)
+}
+
+func TestLogContextFunc(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		if r.Form.Get("hello") == "world" {
+			fmt.Fprintf(w, "hello world")
+		} else {
+			fmt.Fprintf(w, "bad hello")
+		}
+	}))
+
+	ctx := context.TODO()
+	client := New(Timeout(time.Second*5), DisableRedirect)
+	client.SetLogContextFunc(func(ctx context.Context, req *http.Request) context.Context {
+		return log.WithContext(ctx, "log_method", req.Method)
+	})
+
+	query := url.Values{}
+	query.Add("hello", "world")
+
+	result, err := client.Get(ctx, server.URL, "", SetQuery(query))
+	require.NoError(t, err)
+	require.Equal(t, "hello world", result)
 }
 
 func TestMain(m *testing.M) {

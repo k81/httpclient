@@ -25,8 +25,9 @@ var (
 // Client is the http client handle
 type Client struct {
 	*http.Client
-	retrier *retrier.Retrier
-	reqOpts []RequestOption
+	retrier    *retrier.Retrier
+	reqOpts    []RequestOption
+	logCtxFunc LogContextFunc
 }
 
 // New creates a new http client with specified client options
@@ -63,6 +64,11 @@ func (client *Client) SetRetry(backoff []time.Duration) {
 // SetRetrier set the retrier
 func (client *Client) SetRetrier(r *retrier.Retrier) {
 	client.retrier = r
+}
+
+// SetLogContextFunc set a LogContextFunc to dynamically generate the log context
+func (client *Client) SetLogContextFunc(logCtxFunc LogContextFunc) {
+	client.logCtxFunc = logCtxFunc
 }
 
 // Options sends the OPTIONS request
@@ -140,6 +146,10 @@ func (client *Client) DownloadFile(ctx context.Context, url, outFile string, req
 		client.Timeout = DefaultTimeout
 	}
 
+	if client.logCtxFunc != nil {
+		ctx = client.logCtxFunc(ctx, req)
+	}
+
 	ctx = log.WithContext(ctx,
 		"method", method,
 		"url", req.URL.String(),
@@ -203,6 +213,10 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 
 	if client.Timeout == 0 {
 		client.Timeout = DefaultTimeout
+	}
+
+	if client.logCtxFunc != nil {
+		ctx = client.logCtxFunc(ctx, req)
 	}
 
 	ctx = log.WithContext(ctx,

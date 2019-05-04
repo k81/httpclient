@@ -25,14 +25,16 @@ var (
 // Client is the http client handle
 type Client struct {
 	*http.Client
-	retrier *retrier.Retrier
-	reqOpts []RequestOption
+	retrier      *retrier.Retrier
+	reqOpts      []RequestOption
+	debugTraffic bool
 }
 
 // New creates a new http client with specified client options
 func New(opts ...ClientOption) *Client {
 	client := &Client{
-		Client: &http.Client{},
+		Client:       &http.Client{},
+		debugTraffic: true,
 	}
 	for _, opt := range opts {
 		opt(client)
@@ -208,8 +210,10 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 	ctx = log.WithContext(ctx,
 		"method", method,
 		"url", req.URL.String(),
-		"body", body,
 	)
+	if client.debugTraffic {
+		ctx = log.WithContext(ctx, "body", body)
+	}
 
 	begin := time.Now()
 	resp, err = client.Client.Do(req)
@@ -255,11 +259,19 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 		buf.Truncate(buf.Len() - 1)
 	}
 
-	log.Debug(ctx, "request success",
-		"result", result,
-		"set_cookies", buf.String(),
-		"proc_time", time.Since(begin),
-	)
+	if client.debugTraffic {
+		log.Debug(ctx, "request success",
+			"result", result,
+			"set_cookies", buf.String(),
+			"proc_time", time.Since(begin),
+		)
+	} else {
+		log.Debug(ctx, "request success",
+			"set_cookies", buf.String(),
+			"proc_time", time.Since(begin),
+		)
+
+	}
 
 	return result, nil
 }

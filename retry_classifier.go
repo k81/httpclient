@@ -7,6 +7,7 @@ import (
 	"github.com/eapache/go-resiliency/retrier"
 )
 
+// HTTP2RetriableError defines the errors that considered retriable
 var HTTP2RetriableError = []string{
 	"CONNECT_ERROR",
 	"PROTOCOL_ERROR",

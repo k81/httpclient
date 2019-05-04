@@ -35,3 +35,10 @@ func SetCookieJar(cookieJar http.CookieJar) ClientOption {
 		client.Jar = cookieJar
 	}
 }
+
+// DisableTrafficDebug disable the debug log of http traffic
+func DisableTrafficDebug() ClientOption {
+	return func(client *Client) {
+		client.debugTraffic = false
+	}
+}

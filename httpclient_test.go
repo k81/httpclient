@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k81/log"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestGet(t *testing.T) {
@@ -27,7 +27,7 @@ func TestGet(t *testing.T) {
 	}))
 
 	ctx := context.TODO()
-	client := New(Timeout(time.Second*5), DisableRedirect)
+	client := New(zap.NewExample(), Timeout(time.Second*5), DisableRedirect)
 
 	query := url.Values{}
 	query.Add("hello", "world")
@@ -47,7 +47,7 @@ func TestPost(t *testing.T) {
 		}
 	}))
 	ctx := context.TODO()
-	client := New(Timeout(time.Second*5), DisableRedirect)
+	client := New(zap.NewExample(), Timeout(time.Second*5), DisableRedirect)
 
 	form := url.Values{}
 	form.Add("a", "1")
@@ -90,7 +90,7 @@ func TestJSONPost(t *testing.T) {
 	}))
 
 	ctx := context.TODO()
-	client := NewJSON(Timeout(time.Second*5), DisableRedirect)
+	client := NewJSON(zap.NewExample(), Timeout(time.Second*5), DisableRedirect)
 
 	hello := &Hello{
 		Hello: "world",
@@ -115,10 +115,10 @@ func TestLogContextFunc(t *testing.T) {
 	}))
 
 	ctx := context.TODO()
-	client := New(Timeout(time.Second*5), DisableRedirect)
-	client.SetDefaultReqOpts(func(ctx context.Context, req *http.Request) (context.Context, error) {
-		return log.WithContext(ctx, "log_method", req.Method), nil
-	})
+	client := New(zap.NewExample(), Timeout(time.Second*5), DisableRedirect)
+	//client.SetDefaultReqOpts(func(ctx context.Context, req *http.Request) (context.Context, error) {
+	//return log.WithContext(ctx, "log_method", req.Method), nil
+	//})
 
 	query := url.Values{}
 	query.Add("hello", "world")

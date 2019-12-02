@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/k81/log"
+	"go.uber.org/zap"
 )
 
 // JSONClient is an wrapper of *Client, which talks in JSON
@@ -13,8 +13,8 @@ type JSONClient struct {
 }
 
 // NewJSON create a JSON http client instance with specified options
-func NewJSON(opts ...ClientOption) *JSONClient {
-	client := New(opts...)
+func NewJSON(logger *zap.Logger, opts ...ClientOption) *JSONClient {
+	client := New(logger, opts...)
 	return &JSONClient{client}
 }
 
@@ -71,7 +71,7 @@ func (client *JSONClient) Do(ctx context.Context, method, url string, body, resu
 			bodyData = bodyValue
 		default:
 			if bodyData, err = json.Marshal(body); err != nil {
-				log.Error(ctx, "marshal request body", "error", err)
+				client.logger.Error("marshal request body", zap.Error(err))
 				return err
 			}
 		}
@@ -85,7 +85,7 @@ func (client *JSONClient) Do(ctx context.Context, method, url string, body, resu
 
 	if result != nil && resultStr != "" {
 		if err = json.Unmarshal([]byte(resultStr), result); err != nil {
-			log.Error(ctx, "unmarshal response body", "error", err)
+			client.logger.Error("unmarshal response body", zap.Error(err))
 			return err
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/xml"
 
-	"github.com/k81/log"
+	"go.uber.org/zap"
 )
 
 // XMLClient is an wrapper of *Client, which talks in XML
@@ -13,8 +13,8 @@ type XMLClient struct {
 }
 
 // NewXML create a XML http client instance with specified options
-func NewXML(opts ...ClientOption) *XMLClient {
-	client := New(opts...)
+func NewXML(logger *zap.Logger, opts ...ClientOption) *XMLClient {
+	client := New(logger, opts...)
 	return &XMLClient{client}
 }
 
@@ -69,7 +69,7 @@ func (client *XMLClient) Do(ctx context.Context, method, url string, body, resul
 			bodyData = bodyValue
 		default:
 			if bodyData, err = xml.Marshal(body); err != nil {
-				log.Error(ctx, "marshal request body", "error", err)
+				client.logger.Error("marshal request body", zap.Error(err))
 				return err
 			}
 		}
@@ -83,7 +83,7 @@ func (client *XMLClient) Do(ctx context.Context, method, url string, body, resul
 
 	if result != nil && resultStr != "" {
 		if err = xml.Unmarshal([]byte(resultStr), result); err != nil {
-			log.Error(ctx, "unmarshal response body", "error", err)
+			client.logger.Error("unmarshal response body", zap.Error(err))
 			return err
 		}
 	}

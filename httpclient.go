@@ -14,7 +14,7 @@ import (
 	"context"
 
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/k81/log"
+	"go.uber.org/zap"
 )
 
 var (
@@ -27,13 +27,15 @@ type Client struct {
 	*http.Client
 	retrier      *retrier.Retrier
 	reqOpts      []RequestOption
+	logger       *zap.Logger
 	debugTraffic bool
 }
 
 // New creates a new http client with specified client options
-func New(opts ...ClientOption) *Client {
+func New(logger *zap.Logger, opts ...ClientOption) *Client {
 	client := &Client{
 		Client:       &http.Client{},
+		logger:       logger,
 		debugTraffic: true,
 	}
 	for _, opt := range opts {
@@ -142,16 +144,16 @@ func (client *Client) DownloadFile(ctx context.Context, url, outFile string, req
 		client.Timeout = DefaultTimeout
 	}
 
-	ctx = log.WithContext(ctx,
-		"method", method,
-		"url", req.URL.String(),
-		"out_file", outFile,
+	logger := client.logger.With(
+		zap.String("method", method),
+		zap.String("url", req.URL.String()),
+		zap.String("out_file", outFile),
 	)
 
 	begin := time.Now()
 	resp, err = client.Client.Do(req)
 	if err != nil {
-		log.Error(ctx, "do http request", "error", err, "proc_time", time.Since(begin))
+		logger.Error("do http request", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return err
 	}
 	// nolint: errcheck
@@ -159,25 +161,25 @@ func (client *Client) DownloadFile(ctx context.Context, url, outFile string, req
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		log.Error(ctx, "bad http status code", "error", err, "proc_time", time.Since(begin))
+		logger.Error("bad http status code", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return err
 	}
 
 	// open file
 	out, err := os.Create(outFile)
 	if err != nil {
-		log.Error(ctx, "create download file", "error", err, "proc_time", time.Since(begin))
+		logger.Error("create download file", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return err
 	}
 	defer out.Close()
 
 	written, err := io.Copy(out, resp.Body)
 	if err != nil {
-		log.Error(ctx, "copy response data to download file", "error", err, "proc_time", time.Since(begin))
+		logger.Error("copy response data to download file", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return err
 	}
 
-	log.Debug(ctx, "request success", "file_size", written, "proc_time", time.Since(begin))
+	logger.Debug("request success", zap.Int64("file_size", written), zap.Duration("proc_time", time.Since(begin)))
 
 	return nil
 
@@ -207,18 +209,18 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 		client.Timeout = DefaultTimeout
 	}
 
-	ctx = log.WithContext(ctx,
-		"method", method,
-		"url", req.URL.String(),
+	logger := client.logger.With(
+		zap.String("method", method),
+		zap.String("url", req.URL.String()),
 	)
 	if client.debugTraffic {
-		ctx = log.WithContext(ctx, "body", body)
+		logger = logger.With(zap.String("body", body))
 	}
 
 	begin := time.Now()
 	resp, err = client.Client.Do(req)
 	if err != nil {
-		log.Error(ctx, "do http request", "error", err, "proc_time", time.Since(begin))
+		logger.Error("do http request", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return "", err
 	}
 	// nolint: errcheck
@@ -226,7 +228,7 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = &HTTPError{resp.StatusCode, resp.Status}
-		log.Error(ctx, "bad http status code", "error", err, "proc_time", time.Since(begin))
+		logger.Error("bad http status code", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return "", err
 	}
 
@@ -235,7 +237,7 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
 		if reader, err = gzip.NewReader(resp.Body); err != nil {
-			log.Error(ctx, "create gzip reader", "error", err, "proc_time", time.Since(begin))
+			logger.Error("create gzip reader", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 			return "", err
 		}
 		defer reader.Close()
@@ -244,7 +246,7 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 	}
 
 	if respData, err = ioutil.ReadAll(reader); err != nil {
-		log.Error(ctx, "read response body", "error", err, "proc_time", time.Since(begin))
+		logger.Error("read response body", zap.Error(err), zap.Duration("proc_time", time.Since(begin)))
 		return "", err
 	}
 
@@ -260,15 +262,15 @@ func (client *Client) do(ctx context.Context, method, url, body string, reqOpts 
 	}
 
 	if client.debugTraffic {
-		log.Debug(ctx, "request success",
-			"result", result,
-			"set_cookies", buf.String(),
-			"proc_time", time.Since(begin),
+		logger.Debug("request success",
+			zap.String("result", result),
+			zap.String("set_cookies", buf.String()),
+			zap.Duration("proc_time", time.Since(begin)),
 		)
 	} else {
-		log.Debug(ctx, "request success",
-			"set_cookies", buf.String(),
-			"proc_time", time.Since(begin),
+		logger.Debug("request success",
+			zap.String("set_cookies", buf.String()),
+			zap.Duration("proc_time", time.Since(begin)),
 		)
 
 	}

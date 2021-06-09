@@ -14,7 +14,7 @@ import (
 	"context"
 
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/k81/log"
+	"github.com/std0d9k81/log"
 )
 
 var (

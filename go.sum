@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/eapache/go-resiliency v1.1.0 h1:1NtRmCAqadE2FN4ZcN6g90TP3uk8cg9rn9eNK2197aU=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
-github.com/k81/log v1.0.1 h1:HvrBcH7hIaVyh3Bdx6uHTbqWz05KJ9PENnvhy4l/3ds=
-github.com/k81/log v1.0.1/go.mod h1:i48ao3ug8YEyEjgZjDAd8tJ145GYnnoNu/qzj1FAoio=
+github.com/std0d9k81/log v1.0.1 h1:HvrBcH7hIaVyh3Bdx6uHTbqWz05KJ9PENnvhy4l/3ds=
+github.com/std0d9k81/log v1.0.1/go.mod h1:i48ao3ug8YEyEjgZjDAd8tJ145GYnnoNu/qzj1FAoio=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/gls v0.0.0-20190330005825-8d3249985b4b h1:PQg0M0gxbn8npnDpPKfOuVLjYmuxEzTjcLLrNzlaZzE=

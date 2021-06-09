@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/k81/log"
+	"github.com/std0d9k81/log"
 )
 
 // JSONClient is an wrapper of *Client, which talks in JSON

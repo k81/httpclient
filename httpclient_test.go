@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k81/log"
+	"github.com/std0d9k81/log"
 	"github.com/stretchr/testify/require"
 )
 
